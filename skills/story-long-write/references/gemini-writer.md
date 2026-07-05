@@ -18,9 +18,10 @@
 2. **拟写作简报**（落一个临时 brief 文件，模板见文末）：① 本章意图（情绪 / 节奏 / 核心事件 / 钩子 / 爽点，来自意图确认＋细纲骨架）② **文件清单**（本章必读的项目相对路径）③ 硬约束（字数、本书文风、设定红线、章首 / 章尾钩子）④ 输出要求（不输出标题、只正文）。简报只放 Claude 的**指令与清单**，不必内联文件正文——Gemini 会自己读。
 3. **调桥**（`{bridge}` = 激活条件里解析到的 exe 路径；`--require` = 简报文件清单，逗号分隔）：
    ```
-   {bridge} --write --project "{项目根}" --brief-file "{brief}" --require "{清单}" [--model {id}]
+   {bridge} --write --project "{项目根}" --brief-file "{brief}" --require "{清单}" [--model {pro|flash}]
    ```
-   `stdout` = 正文；`stderr` = 工具轨迹 + `[读取]` / `[✓ 必读覆盖]` / `[⚠ 漏读必读]`。
+   `stdout` = 正文；`stderr` = 工具轨迹 + `[读取]` / `[✓ 必读覆盖]` / `[⚠ 漏读必读]` + `[模型 …]`。
+   - **模型选择**（取 `设定/写手.md` 的 `model:`，缺省 pro）：`--model pro` = Gemini 3.1 Pro (High)（文笔最好）；`--model flash` = Gemini 3.5 Flash (High) = `gemini-3-flash-agent`（快、省额度）。**两档思考等级都是 high**（桥对非 2.5 模型统一注入 `thinkingLevel=high`）。正文默认 pro；赶进度 / 走量 / 先出草稿可用 flash。
 4. **验监督**：看 `stderr`——`[✓ 必读覆盖]` 才算达标；`[⚠ 漏读必读]`（补读 2 次仍漏）则据情形重跑或补简报再跑。**退出码 2（缺登录）→ 提示用户重跑 `{bridge} --login` 走浏览器授权**后再来。
 5. **落盘**：正文前加 `## 第N章 {章名}`，写入 `正文/第XXX章_章名.md`。
 6. **质检（按本书文风适配 —— 关键，别机械套默认规则）**：
@@ -65,7 +66,7 @@
 ```
 engine: gemini            # 或 claude（关闭 Gemini 执笔、回退原路径）
 bridge: <gemini-bridge.exe 绝对路径>   # 留空则用 GEMINI_BRIDGE 或 .story-deployed 的 gemini_bridge
-model: gemini-pro-agent   # 默认 3.1 Pro High，可留空
+model: pro                # pro = 3.1 Pro High（文笔最好，默认）/ flash = 3.5 Flash High（快）；两者思考都是 high。也可填完整 id 如 gemini-pro-agent
 排版风格: 番茄轻小说       # 或 默认；决定质检适配
 质检适配: 允许 ……/——/段间空行；跳过 normalize-punctuation
 必读清单模板: 大纲/细纲_第{N}章.md, 正文/第{N-1}章_*.md, 设定/写法自查.md, 追踪/角色状态.md, 追踪/伏笔.md

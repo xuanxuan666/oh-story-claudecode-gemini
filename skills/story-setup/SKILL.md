@@ -306,8 +306,9 @@ OpenClaw Phase 1 只部署 skills，不部署 OpenClaw agents/hooks/plugin。
    - 若运行报「找不到 .NET 运行时 / You must install .NET」→ 该 exe 是框架依赖版，需 **.NET 10 运行时**（https://dotnet.microsoft.com/download/dotnet/10.0 ，装 Runtime 即可、无需 SDK）；装好后重试。
    - `--login` 需能起本地回环端口（默认 51121）并打开浏览器。无图形界面的远程环境：把命令打印的授权 URL 手动在本机浏览器打开完成授权。
 3. **自检**：运行 `{bridge} --selftest`——输出一句正文即登录态 + 模型可用；退出码 2（缺登录）→ 回第 2 步重登；其它失败按报错处理并回退 claude。
-4. **写配置**：向 `.story-deployed` 追加 `prose_engine: gemini` 与 `gemini_bridge: {bridge}`。可选：为活跃书目写 `设定/写手.md`（模型 / 文风适配 / 必读清单模板，模板见 `story-long-write/references/gemini-writer.md` 第六节）——番茄轻小说等特殊排版体裁**建议写**，以便质检适配（允许 ……/——/段间空行、跳过 normalize-punctuation）。
-5. 告知用户：之后 `/story-long-write`、`/story-short-write` 写正文会自动走 Gemini（流程见 gemini-writer.md）；想切回 Claude 自己写，把 `.story-deployed` 的 `prose_engine` 改回 `claude`（或删该字段），或在书目 `设定/写手.md` 标 `engine: claude`。
+4. **选写作模型**：用 AskUserQuestion 问「Gemini 写作模型」——**Pro**（Gemini 3.1 Pro High，文笔最好，默认）/ **Flash**（Gemini 3.5 Flash High，快、省额度）。两档**思考等级都是 high**。把选择写进 `设定/写手.md` 的 `model:`（`pro` 或 `flash`）。
+5. **写配置**：向 `.story-deployed` 追加 `prose_engine: gemini` 与 `gemini_bridge: {bridge}`。为活跃书目写 `设定/写手.md`（`model:`（pro/flash）/ 文风适配 / 必读清单模板，模板见 `story-long-write/references/gemini-writer.md` 第六节）——番茄轻小说等特殊排版体裁**建议写**文风适配（允许 ……/——/段间空行、跳过 normalize-punctuation）。
+6. 告知用户：之后 `/story-long-write`、`/story-short-write` 写正文会自动走 Gemini（流程见 gemini-writer.md），用所选模型（pro/flash，都 high 思考）；想换模型改 `设定/写手.md` 的 `model:`。想切回 Claude 自己写，把 `.story-deployed` 的 `prose_engine` 改回 `claude`（或删该字段），或在书目 `设定/写手.md` 标 `engine: claude`。
 
 ## Phase 3：验证安装
 
