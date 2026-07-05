@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+> 可选「Gemini 执笔正文」：Claude 当大脑（选料 / 审校 / 质检 / 追踪），Gemini 3.1 Pro 当枪手，用只读文件工具自读项目文件写正文。默认仍是 Claude 自己写。
+
+### 新增
+
+- **Gemini 执笔（可选）**：内置预编译 `skills/story-setup/bin/gemini-bridge.exe`（Windows / 框架依赖，需 .NET 10 运行时；源码不在仓库）——复用 Google Antigravity 订阅（OAuth 登录一次、自动刷新），自实现 agent 文件工具循环，让 Gemini 用只读 `read_file` / `list_directory`（锁死项目目录）自读细纲 / 上一章 / 文风 / 对标原文写正文；`--require` 必读清单 + 监督闸（漏读自动打回补读、缺登录退出码 2）。
+- **story-setup 正文引擎选择**：`/story-setup` 新增「正文引擎」一步（2.8），可选 Claude 自己写（默认）或 Gemini 执笔；选 Gemini 时用内置 exe、**自动打开浏览器授权 Antigravity**、自检并写入 `.story-deployed` 的 `prose_engine` / `gemini_bridge`。
+- **执笔 SOP**：`story-long-write/references/gemini-writer.md` 沉淀「拟简报 → 调桥 → 监督必读 → 按本书文风质检 → 打回重写 → 落盘」全流程；`story-long-write`（SKILL + workflow-daily）与 `story-short-write` 的「正文执行」加 Gemini 分支（未开启则回退原 narrative-writer 路径）。
+- **质检按本书文风适配**：番茄 / 空行体裁质检忽略 `check-ai-patterns` 的 ——/碎句命中、跳过 `normalize-punctuation`，避免机械套默认规则毁掉本书排版。
+
 ## v0.6.21
 
 > 短篇写作参考栈瘦身：删掉长篇继承残留，建立短篇专属 format/craft/deslop/题材包体系（#206）

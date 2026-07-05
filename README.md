@@ -1,8 +1,12 @@
 [English](README_EN.md) | **中文**
 
-# oh-story-claudecode
+# oh-story-claudecode-gemini
 
 网文写作 skill 包，覆盖长篇与短篇网络小说的扫榜、拆文、写作、去AI味、封面图全流程。适配 Claude Code、OpenCode、OpenClaw、Codex CLI、workbuddy。
+
+> 🆕 **本分支新增「Gemini 执笔正文」（可选）**：Claude 当大脑（选料 / 审校 / 质检 / 追踪），Gemini 3.1 Pro 当枪手、自读项目文件写正文，文笔更「网文」。跑 `/story-setup` 在「正文引擎」一步一键开启——**自动打开浏览器授权 Antigravity**（Google 账号登录一次）。详见下方 [可选：Gemini 执笔正文](#可选gemini-执笔正文claude-大脑--gemini-枪手) 章节。
+>
+> 本仓库 fork 自 [worldwonderer/oh-story-claudecode](https://github.com/worldwonderer/oh-story-claudecode)，只增加 Gemini 执笔这一可选能力，其余全流程（扫榜 / 拆文 / 写作 / 去 AI 味 / 封面）与上游保持一致。
 
 ## 核心思路
 
@@ -212,6 +216,17 @@ demo/让你管账号，你高燃混剪炸全网/
 逐章提取（事件 / 角色 / 设定 / 伏笔 / 时间线）反推为续写 bible，作者从第 21 章无缝接着写。
 
 </details>
+
+## 可选：Gemini 执笔正文（Claude 大脑 + Gemini 枪手）
+
+默认正文由 Claude 自己写。你也可以让 **Gemini 3.1 Pro 执笔正文**——Claude 仍当大脑（选料、拟简报、审校、质检、维护追踪），Gemini 当枪手：用只读文件工具**自己读**项目里的细纲 / 上一章 / 文风 / 对标原文，写出更“网文”、更铺得开的正文。接缝只在「正文执行」这一步，大纲 / 设定 / 追踪 / 质检管道全不变。
+
+**怎么开**：跑 `/story-setup`，在「正文引擎」一步选 **Gemini 执笔**。它用技能内置的 `gemini-bridge.exe`（预编译，需 **.NET 10 运行时**），**自动打开浏览器授权 Antigravity**（Google 账号登录一次、长期有效），自检通过后写入配置。之后 `/story-long-write`、`/story-short-write` 的正文就自动走 Gemini。想切回 Claude 自己写，把 `.story-deployed` 的 `prose_engine` 改回 `claude` 即可。
+
+- **监督**：Claude 把「必读清单」交给桥（`--require`），Gemini 漏读会被**监督闸自动打回补读**；正文永远经 Claude 质检（去 AI 味 / 退化检测 / 字数）才落盘。
+- **质检适配**：番茄轻小说等特殊排版体裁，质检按本书文风放行（允许 ……/——/段间空行、跳过 normalize-punctuation）。
+- 认证走 Antigravity 的 Google OAuth（Code Assist 后端），**非官方付费 API key**，个人在自己订阅额度内使用。
+- 细节见 `skills/story-setup/bin/README.md`（登录 / 用法）与 `skills/story-long-write/references/gemini-writer.md`（执笔 SOP）。**目前仅 Windows；桥源码不在本仓库。**
 
 ## Agent 体系
 
