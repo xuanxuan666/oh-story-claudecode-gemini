@@ -307,7 +307,8 @@ OpenClaw Phase 1 只部署 skills，不部署 OpenClaw agents/hooks/plugin。
    - `--login` 需能起本地回环端口（默认 51121）并打开浏览器。无图形界面的远程环境：把命令打印的授权 URL 手动在本机浏览器打开完成授权。
 3. **自检**：运行 `{bridge} --selftest`——输出一句正文即登录态 + 模型可用；退出码 2（缺登录）→ 回第 2 步重登；其它失败按报错处理并回退 claude。
 4. **选写作模型**：用 AskUserQuestion 问「Gemini 写作模型」——**Pro**（Gemini 3.1 Pro High，文笔最好，默认）/ **Flash**（Gemini 3.5 Flash High，快、省额度）。两档**思考等级都是 high**。把选择写进 `设定/写手.md` 的 `model:`（`pro` 或 `flash`）。
-5. **写配置 + 释放写法铁律**：向 `.story-deployed` 追加 `prose_engine: gemini` 与 `gemini_bridge: {bridge}`。**把 `skills/story-setup/references/写作铁律.md` 复制到活跃书目 `设定/写作铁律.md`**（create-if-absent，已存在就别覆盖——用户可能已按本书定制）——这是 Gemini 每章 `--require` 必读的通用网文写法准则（文末「十、动笔前最后叮嘱」是核心自检）。再为活跃书目写 `设定/写手.md`（`model:`（pro/flash）/ 文风适配 / 必读清单模板须含 `设定/写作铁律.md`，模板见 `story-long-write/references/gemini-writer.md` 第六节）——番茄轻小说等特殊排版体裁**建议写**文风适配（允许 ……/——/段间空行、跳过 normalize-punctuation）。
+5. **写配置**：向 `.story-deployed` 追加 `prose_engine: gemini` 与 `gemini_bridge: {bridge}`。再为活跃书目写 `设定/写手.md`（`model:`（pro/flash）/ 本书文风适配 / 必读清单模板，模板见 `story-long-write/references/gemini-writer.md` 第六节）。
+   > **不再向项目释放任何"写法铁律/写法手册"文档**。通用网文写法方法论（对齐番茄官方教程）统一放在技能 references 里（writing-craft / dialogue-mastery / character-* / hooks-* / plot-* / opening-design 等），由 Claude（大脑）读取、并在每章写作简报里按需把「本章写法要点」揉给 Gemini（见 gemini-writer.md）。项目 `设定/` 只放**本书特有**的文风/设定，不放通用准则。
 6. 告知用户：之后 `/story-long-write`、`/story-short-write` 写正文会自动走 Gemini（流程见 gemini-writer.md），用所选模型（pro/flash，都 high 思考）；想换模型改 `设定/写手.md` 的 `model:`。想切回 Claude 自己写，把 `.story-deployed` 的 `prose_engine` 改回 `claude`（或删该字段），或在书目 `设定/写手.md` 标 `engine: claude`。
 
 ## Phase 3：验证安装
