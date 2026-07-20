@@ -206,7 +206,9 @@ check_skill() {
       [ -z "$ref_name" ] && continue
       # Skip template placeholders and non-ASCII paths (artifact templates)
       [[ "$ref_name" == *"{"* ]] && continue
-      [[ "$ref_name" =~ [^[:ascii:]] ]] && continue
+      # Git Bash does not implement the non-POSIX [:ascii:] regex class.
+      # Reference paths are printable text, so a C-locale printable-ASCII check is sufficient.
+      printf '%s' "$ref_name" | LC_ALL=C grep -qE '^[ -~]+$' || continue
       # Only check filenames that look like reference docs (lowercase ASCII + hyphens + underscores)
       local base_name="$(basename "$ref_name")"
       [[ "$base_name" =~ ^[a-z0-9_-]+\.md$ ]] || continue

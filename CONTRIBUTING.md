@@ -212,7 +212,8 @@ OPENCLAW_REAL_CHECK=1 bash scripts/check-openclaw-skills.sh  # 本机安装 open
 
 本项目同时支持 Codex CLI（repo skills 发现 + `$story-setup` 项目部署）：
 
-- repo-local skills：`.agents/skills` 是指向 `skills/` 的相对 symlink（`../skills`，agentskills.io 标准路径），Codex 扫描它发现 skill，别复制第二份。必须是有效相对 symlink（`check-codex-adapter.sh` 守卫 target=`../skills`；无效/绝对会让发现失效，见 openai/codex#11314）；Windows 需 git `core.symlinks=true`。OpenClaw 原生扫 workspace `skills/`，不依赖它。
+- repo-local skills：`.agents/skills/*/SKILL.md` 是由 `scripts/generate-codex-skill-shims.py` 从 `skills/*/SKILL.md` 生成的轻量适配入口。Codex 扫描它们后再读取 `skills/` 真源，references/scripts/assets 不复制。这样 Windows `core.symlinks=false` 也不会把发现路径检出成失效文本文件。OpenClaw 仍可原生扫 workspace `skills/`。
+- plugin distribution：仓库根 `.codex-plugin/plugin.json` 将 `./skills/` 打包为一个 Codex 插件；manifest 的 `name` 必须与仓库目录名一致，`version` 必须与 `skills/story/VERSION` 同步。
 - project deployment hooks：`skills/story-setup/references/codex/hooks/hooks.json` 面向 `$story-setup` 部署到写作项目，`command`（POSIX sh）通过当前目录向上查找定位项目 `.codex/hooks/story_codex_hook.py`，不得要求项目必须是 Git 仓库；并把查到的根以 `CODEX_PROJECT_DIR=` 传给 Python（Codex 本身不注入该变量，root 解析以 Python 的 `__file__` 自定位为准）。
 - Windows hooks：Codex 在 Windows 下用 `%COMSPEC% /C`（cmd.exe）跑 hook 命令，**不是** POSIX shell，所以每个 hook 必须带 `commandWindows`（cmd.exe 语法）。当前 `commandWindows` 为 `if exist .codex\hooks\story_codex_hook.py python ... <event>`：cwd 为项目根时运行、否则干净 no-op（best-effort，上溯查找仅 POSIX `command` 具备）。Python hook 本体跨平台、已做 UTF-8 字节 stdio 与 `__file__` 自定位。改 `command` 时必须同步改 `commandWindows`（`check-codex-adapter.sh` 守卫 event 一致 + cmd.exe 安全）。
 - custom agents：`skills/story-setup/references/codex/agents/*.toml` 由 `scripts/generate-codex-agents.py` 从 `references/templates/agents/*.md` 生成。修改 Claude agent 模板后必须重新生成并提交。
@@ -220,10 +221,13 @@ OPENCLAW_REAL_CHECK=1 bash scripts/check-openclaw-skills.sh  # 本机安装 open
 ### Codex 同步步骤
 
 ```bash
-python3 scripts/generate-codex-agents.py
+python scripts/generate-codex-agents.py
+python scripts/generate-codex-skill-shims.py
 bash scripts/check-codex-adapter.sh
 bash scripts/test-codex-hooks.sh
 ```
+
+macOS/Linux 只有 `python3` 时用 `python3` 替换上述 `python`；Windows 只有 Python Launcher 时用 `py`。守卫脚本自身会按 `python3 → python → py` 探测。
 
 ### Codex 关键兼容性问题
 

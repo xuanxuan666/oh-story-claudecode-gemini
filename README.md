@@ -100,7 +100,7 @@ npx skills add worldwonderer/oh-story-claudecode -y -g
 `-g` 全局安装，所有目录可用；去掉 `-g` 则只装到当前目录。更新时重新执行同一条命令即可。
 
 
-> **Codex 用户：** repo 内直接使用：Codex 会扫描 `$REPO_ROOT/.agents/skills`（指向 `skills/` 的 symlink）发现 13 个 skill；用 `$story`、`$story-setup` 或 `/skills` 调用。Windows 上 git 需开 `core.symlinks=true`，否则 symlink 失效，改走下方 `$story-setup` 部署。
+> **Codex 用户：** repo 内直接使用：Codex 会扫描 `$REPO_ROOT/.agents/skills` 下的 13 个跨平台适配入口，再读取 `skills/` 中的完整 skill；用 `$story`、`$story-setup` 或 `/skills` 调用。Windows 不再依赖 Git symlink。仓库根的 `.codex-plugin/plugin.json` 也可将整套 `skills/` 打包为 Codex 插件。
 > 跑 `$story-setup` 部署到写作项目后，会写入 `.codex/agents/*.toml`、`.codex/hooks.json`、`.codex/hooks/story_codex_hook.py` 和 `.codex/skills/story-setup/references/agent-references/`；请信任项目 `.codex/` 配置层并在 `/hooks` review/trust hooks、新开 Codex 会话，让 custom agents 生效。
 >
 > **OpenCode 用户：** 全局安装后 opencode 自动从 `~/.claude/skills/` 发现 skills；首次用自然语言触发 story-setup（如「用 story-setup 部署网文写作环境」），**部署后退出重进 `opencode -c`** 才能用 slash command。部分 hook 行为与 Claude Code 有差异（session-start / session-end / compact 等），详见 [CONTRIBUTING.md](CONTRIBUTING.md) 的 OpenCode 章节。
@@ -109,7 +109,7 @@ npx skills add worldwonderer/oh-story-claudecode -y -g
 >
 > 升级后如果项目里已经跑过 `/story-setup`，建议在项目根重跑一次 `/story-setup`，同步 hooks / agents / references。每版变更见 [CHANGELOG.md](CHANGELOG.md) 与 [Releases](https://github.com/worldwonderer/oh-story-claudecode/releases)。
 
-> **多 agent 协作要先部署再新开会话**：7 个专业 agent（story-architect、narrative-writer、consistency-checker 等）由 `/story-setup` 写入项目 `.claude/agents/`，或由 `$story-setup` 写入 `.codex/agents/*.toml`。Claude Code / Codex 都在会话启动时更稳定地注册 custom agent，所以 **setup 跑完必须 trust 项目配置并新开对应 CLI 会话**，story-review 的多视角对抗审查、写作流程里的 agent 协作才会生效；否则 skill 会拿到「subagent_type 不可用 / Codex unknown agent_type」并降级 solo（单视角）。OpenClaw Phase 1 不部署 agents，默认走 skills + solo fallback。判断是否生效：新会话里跑 `/story-review`，报告头是 `Effective Mode: full/lean` 即注册成功，是 `Fallback: ... -> solo` 说明还在旧会话或当前运行时未暴露该 agent。
+> **多 agent 协作要先部署再新开会话**：7 个专业 agent（story-architect、narrative-writer、consistency-checker 等）由 `/story-setup` 写入项目 `.claude/agents/`，或由 `$story-setup` 写入 `.codex/agents/*.toml`。Claude Code / Codex 都在会话启动时更稳定地注册 custom agent，所以 **setup 跑完必须 trust 项目配置并新开对应 CLI 会话**，story-review 的多视角对抗审查、写作流程里的 agent 协作才会生效；否则 skill 会拿到「subagent_type 不可用 / Codex unknown agent_type」并降级 solo（单视角）。OpenClaw Phase 1 不部署 agents，默认走 skills + solo fallback。判断是否生效：新会话里跑 `$story-review`（Claude Code / OpenCode 中用 `/story-review`），报告头是 `Effective Mode: full/lean` 即注册成功，是 `Fallback: ... -> solo` 说明还在旧会话或当前运行时未暴露该 agent。
 
 ## Skills
 

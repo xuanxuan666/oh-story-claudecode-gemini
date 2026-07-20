@@ -1,6 +1,5 @@
 ---
 name: story-cover
-version: 1.0.0
 description: "小说封面生成。根据书名、作者名自动分析题材风格，调用 GPT-Image-2 直接生成含标题和署名的专业级网文封面。触发方式：/story-cover、/封面、「帮我做个封面」「生成封面图」「做个小说封面」「封面设计」。"
 metadata: {"openclaw":{"requires":{"env":["GPT_IMAGE_API_KEY"],"bins":["curl","jq","base64"]},"primaryEnv":"GPT_IMAGE_API_KEY","source":"https://github.com/worldwonderer/oh-story-claudecode"}}
 ---
@@ -35,7 +34,7 @@ metadata: {"openclaw":{"requires":{"env":["GPT_IMAGE_API_KEY"],"bins":["curl","j
 必填：书名、作者名（笔名）、目标平台、输出目录 `BOOK_DIR`（建议 `./covers/<书名>`，调用前 export）
 选填：参考图 `REF_IMAGE`（本地路径或 URL，设置后切换到图生图）、风格偏好、尺寸
 
-> **书名和笔名是封面必需信息**：缺任一必须先用 AskUserQuestion 问用户补全，不得编造或留空。
+> **书名和笔名是封面必需信息**：缺任一必须先用当前宿主的用户输入能力请用户补全（Codex 无结构化提问工具时直接简短提问），不得编造或留空。
 
 **按目标平台定封面尺寸**：番茄上传 600×800 是 **3:4**（不是 2:3），出图比例不对、平台二次裁剪就会切掉书名/笔名。
 

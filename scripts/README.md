@@ -17,7 +17,7 @@
 | `check-python-invocation.sh` | 技能文档禁止裸调 `python3`（须 python3→python→py 探测） | CI（也被 test-charcount-portable 调） |
 | `check-opencode-adapter.sh` | OpenCode 适配层同步 + commands/agents/plugin/config 锚点 | CI + sync CI（调 sync-opencode.py） |
 | `check-openclaw-skills.sh` | OpenClaw AgentSkills/frontmatter 兼容性 | CI |
-| `check-codex-adapter.sh` | Codex 适配层：repo skills symlink、agent TOML、hooks 锚点 | CI（调 generate-codex-agents.py 验生成确定性） |
+| `check-codex-adapter.sh` | Codex 适配层：repo skill shims、plugin manifest、agent TOML、hooks 锚点 | CI（调两个 Codex 生成器验确定性） |
 
 ## 测试回归（test-*）
 
@@ -39,5 +39,6 @@
 |---|---|---|
 | `sync-opencode.py` | 从 Claude agent 模板 + `CLAUDE.md.tmpl` 生成 `opencode/agents/` 与 `AGENTS.md.tmpl` | 改 agent 模板后手动跑；sync CI + 被 check-opencode-adapter 调 |
 | `generate-codex-agents.py` | 从 Claude agent 模板生成 Codex `.toml` agents | 改 agent 模板后手动跑；被 check-codex-adapter 调验确定性 |
+| `generate-codex-skill-shims.py` | 从 `skills/*/SKILL.md` 生成 Windows 可携的 `.agents/skills` 发现入口 | 改 skill 名称或 frontmatter 后手动跑；被 check-codex-adapter 验同步 |
 
-> 改了 `skills/story-setup/references/templates/agents/*.md` 或 `CLAUDE.md.tmpl`，必须重跑这两个生成脚本并提交结果，否则适配层 CI 红。详见 [CONTRIBUTING.md](../CONTRIBUTING.md)「OpenCode 模板同步」「Codex 适配维护」。
+> 改了 `skills/story-setup/references/templates/agents/*.md` 或 `CLAUDE.md.tmpl`，必须重跑 OpenCode/Codex agent 生成脚本并提交结果。改了任一 skill 名称或 frontmatter，还要跑 `generate-codex-skill-shims.py`。详见 [CONTRIBUTING.md](../CONTRIBUTING.md)「OpenCode 模板同步」「Codex 适配维护」。

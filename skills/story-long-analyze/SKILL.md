@@ -1,6 +1,5 @@
 ---
 name: story-long-analyze
-version: 1.0.0
 description: "长篇网文拆文。深度拆解爆款长篇小说的黄金三章、人设架构、爽点设计、节奏控制。单一深度拆解管道：跑完黄金三章（Stage 1）后产出快速预览报告并询问是否继续全量拆解，确认后从 Stage 2 续跑逐章摘要、聚合分析、设定关系、汇总报告，全程产物落盘 拆文库/{书名}/。触发方式：/story-long-analyze、/长篇拆文、「帮我拆这本书」「拆这本书」「分析黄金三章」「深度拆解」「完整拆解」「系统拆解」或提供小说文本文件路径——全部进入同一管道。"
 metadata: {"openclaw":{"source":"https://github.com/worldwonderer/oh-story-claudecode"}}
 ---
@@ -138,7 +137,7 @@ Stage 0+1 完成后，管道**自动停靠**，产出快速预览报告并询问
 
 1. **生成停靠交付物**：写 `拆文库/{书名}/快速预览.md`（模板见 [output-templates.md](references/output-templates.md) 的「快速预览报告」）。此时 `概要.md`、`章节/第1章_深度拆解.md`、`章节/第2章_深度拆解.md`、`章节/第3章_深度拆解.md`、`原文/` 均已落盘。
 2. **写停靠状态**：`_progress.md` 的「最终状态」字段写 `paused_after_stage1`，「断点」段记录「下一操作：Stage 2 逐章摘要」。
-3. **询问用户**（用 AskUserQuestion 风格的明确二选一）：
+3. **询问用户**（用当前宿主的用户输入能力给出明确二选一；Codex 无结构化提问工具时直接简短提问）：
    > 「黄金三章已拆完，快速预览报告见 `快速预览.md`。是否继续全量拆解（Stage 2-6：逐章摘要 / 聚合分析（含 `剧情/节奏.md`、`剧情/情绪模块.md`）/ 设定关系 / 汇总报告 / 文风）？预计耗时 {基于章节数粗估}。」
    - 选「继续全量拆解」→ 读 `_progress.md`，从 **Stage 2** 续跑，**不重跑 Stage 0/1**。
    - 选「就到这里」→ 管道结束，`_progress.md` 状态保持 `paused_after_stage1`，告知用户「之后可随时 `/story-long-analyze` 同一本书，会自动从 Stage 2 续跑」。

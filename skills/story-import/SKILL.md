@@ -1,6 +1,5 @@
 ---
 name: story-import
-version: 1.0.0
 description: "逆向导入已有小说。将已写好的小说（半成品或完本）反向解析为标准项目目录结构，兼容 story-long-write / story-short-write 后续写作流程；内部复用 story-long-analyze / story-short-analyze 的拆解管道，按篇幅自动分流。触发方式：/story-import、「导入小说」「反向解析」「导入」「把我的书导进来」。"
 metadata: {"openclaw":{"source":"https://github.com/worldwonderer/oh-story-claudecode"}}
 ---
@@ -109,7 +108,7 @@ metadata: {"openclaw":{"source":"https://github.com/worldwonderer/oh-story-claud
 
 #### 长篇：自动续跑过 Stage 1 停靠点
 
-story-long-analyze 在 Stage 0+1（黄金三章）后会**自动停靠**并用 AskUserQuestion 询问是否继续全量拆解（对应 story-long-analyze 的「Stage 1 停靠点」）。但导入场景需要 Stage 2-6 的全套产物（逐章摘要 / 聚合分析 / `剧情/节奏.md` / `剧情/情绪模块.md` / 设定关系 / 汇总报告 / 文风），缺一不可——否则 Phase 3 迁移会拿到半成品。
+story-long-analyze 在 Stage 0+1（黄金三章）后会**自动停靠**并交互式询问是否继续全量拆解（Codex 无结构化提问工具时直接简短提问；对应 story-long-analyze 的「Stage 1 停靠点」）。但导入场景需要 Stage 2-6 的全套产物（逐章摘要 / 聚合分析 / `剧情/节奏.md` / `剧情/情绪模块.md` / 设定关系 / 汇总报告 / 文风），缺一不可——否则 Phase 3 迁移会拿到半成品。
 
 **新旧拆文库判定**：若 `_progress.md` 标记 Stage 3+ 已完成，或 `拆文报告.md` 已含「读者需求 / 情绪引擎」「关键信息与扩写技法总览」「节奏与情绪触动点」「可复现模块」任一 v12 摘要标题，视为 v12 新契约拆文库；此时 `剧情/节奏.md` 与 `剧情/情绪模块.md` 是导入必备权威产物，缺失必须先修复/重跑 Stage 3，不得静默降级。只有旧拆文库（pre-v12，无上述信号）才能走 legacy fallback。
 

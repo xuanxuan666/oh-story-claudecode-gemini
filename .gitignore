@@ -2,9 +2,9 @@
 **/.omc/
 .claude/
 .agents/*
-!.agents/skills
+!.agents/skills/
+!.agents/skills/**
 .codebuddy/
-AGENTS.md
 CLAUDE.md
 _archive/
 skills-lock.json

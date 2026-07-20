@@ -1,12 +1,13 @@
 ---
 name: story-setup
-version: 1.2.5
 description: "网文写作工具集基础设施部署。将 hooks/rules/agents/CLAUDE.md/AGENTS.md 等基础设施部署到用户项目目录，支持 Claude Code / OpenCode / Codex / OpenClaw。触发方式：/story-setup、$story-setup、「准备写书」「帮我搭一下环境」「配置写作项目」。"
 metadata: {"openclaw":{"source":"https://github.com/worldwonderer/oh-story-claudecode"}}
 ---
 # story-setup：网文写作工具集基础设施部署
 
 你是写作基础设施部署器。将网文写作工具集的全套基础设施（hooks、rules、agents、CLAUDE.md、AGENTS.md、Codex/OpenClaw 配置）部署到用户项目目录。
+
+> 交互兼容：下文的“交互式询问”使用当前宿主可用的用户输入工具；Codex 当前无结构化提问工具时，直接用简短问句询问，不得因工具名不同中断部署。
 
 **执行铁律：不覆盖用户已有配置，合并而非替换。**
 
@@ -15,7 +16,7 @@ metadata: {"openclaw":{"source":"https://github.com/worldwonderer/oh-story-claud
 ## Phase 1：检测项目状态
 
 1. 检查当前目录是否已部署过（存在 `.story-deployed`）
-   - 如果已存在 → 使用 AskUserQuestion 确认是否重新部署
+   - 如果已存在 → 交互式询问是否重新部署
 2. 检查是否有书名目录（包含 `追踪/` 子目录的目录，或用户自定义结构）
    - 有 → 识别为长篇项目，显示当前项目信息
    - 无 → 识别为新项目或短篇项目
@@ -34,8 +35,8 @@ metadata: {"openclaw":{"source":"https://github.com/worldwonderer/oh-story-claud
 7. 检查 `openclaw.json`、`.openclaw/`、`.agents/skills/`、`AGENTS.md` 中的 OpenClaw 段，或 `skills/*/SKILL.md` 中的 `metadata.openclaw`
    - 存在 → 识别为 OpenClaw 项目，`target_cli = openclaw`
    - 不存在 → 跳过
-8. 如 `.claude/` 或 `CLAUDE.md`、opencode 标记、Codex 标记、OpenClaw 标记同时存在 → 使用 AskUserQuestion 让用户选择目标 CLI（选项：仅 Claude Code / 仅 OpenCode / 仅 Codex / 仅 OpenClaw / 任意组合）
-9. 如四者都不存在（全新项目）→ 使用 AskUserQuestion 让用户选择目标 CLI
+8. 如 `.claude/` 或 `CLAUDE.md`、opencode 标记、Codex 标记、OpenClaw 标记同时存在 → 交互式询问目标 CLI（选项：仅 Claude Code / 仅 OpenCode / 仅 Codex / 仅 OpenClaw / 任意组合）
+9. 如四者都不存在（全新项目）→ 交互式询问目标 CLI
    - 用户选择 opencode → `target_cli = opencode`，部署时创建 `opencode.json` 和 `.opencode/`
    - 用户选择 claude-code → 按现有逻辑处理
    - 用户选择 codex → `target_cli = codex`，部署时创建 `.codex/`
@@ -44,7 +45,7 @@ metadata: {"openclaw":{"source":"https://github.com/worldwonderer/oh-story-claud
 
 ## Phase 2：部署基础设施
 
-使用 AskUserQuestion 确认部署位置后，依次执行。
+交互式确认部署位置后，依次执行。
 
 ### 2.0 部署清单（机械可检查）
 
@@ -164,7 +165,7 @@ OpenCode agents 部署是 `replace`，会覆盖上次写入的 `model:`。所以
 
 #### Step 3：逐级交互选择
 
-按 低端 → 中端 → 高端 顺序，每级用 AskUserQuestion 让用户选择。
+按 低端 → 中端 → 高端 顺序，每级都交互式让用户选择。
 
 **低端选项结构：**
 
@@ -200,7 +201,7 @@ OpenCode agents 部署是 `replace`，会覆盖上次写入的 `model:`。所以
 ```
 
 规则：
-- 候选最多显示 5 个，超过则截断并提示"更多模型请使用自定义输入"。**每一级无论候选数是否为 0 都用 AskUserQuestion 弹出**，选项至少含：候选模型（如有）、`自定义输入`、`保留现有模型`（Step 0 缓存到该 agent 的 model，无则不显示此项）、`跳过，用主模型`。候选为 0 时仍弹窗，并在问题说明里给出对应警告 + 列出未分级/未入档模型供参考——不再静默跳过交互（否则用户够不到自定义输入）。
+- 候选最多显示 5 个，超过则截断并提示"更多模型请使用自定义输入"。**每一级无论候选数是否为 0 都交互式询问**，选项至少含：候选模型（如有）、`自定义输入`、`保留现有模型`（Step 0 缓存到该 agent 的 model，无则不显示此项）、`跳过，用主模型`。候选为 0 时仍询问，并在问题说明里给出对应警告 + 列出未分级/未入档模型供参考——不再静默跳过交互（否则用户够不到自定义输入）。
 - `自定义输入`：用户输入 `provider/model-id` 完整 ID；写入前校验为单行、无控制字符、匹配 `^[A-Za-z0-9._-]+/[A-Za-z0-9._:+-]+$`，不符则提示重输或改选跳过。
 - `保留现有模型`：写回 Step 0 缓存的该 agent model（重新部署时保住用户上次配置），不算"跳过"。
 - `跳过，用主模型`：显式清除——不写该 agent 的 `model:`，agent 继承主模型。想保留上次配置请选 `保留现有模型`。
@@ -288,7 +289,7 @@ OpenClaw Phase 1 只部署 skills，不部署 OpenClaw agents/hooks/plugin。
 
 > 正文（章节内容）由谁来写是**可选项**，默认 Claude 自己写。Gemini 执笔＝Claude 当大脑（选料 / 审校 / 质检 / 追踪）、Gemini 当枪手（用只读文件工具自读项目文件写正文），文笔更“网文”。详见 `skills/story-long-write/references/gemini-writer.md` 与 `skills/story-setup/bin/README.md`。
 
-用 AskUserQuestion 让用户选择：
+交互式让用户选择：
 
 ```
 问题："正文（章节内容）用谁来写？"
@@ -306,7 +307,7 @@ OpenClaw Phase 1 只部署 skills，不部署 OpenClaw agents/hooks/plugin。
    - 若运行报「找不到 .NET 运行时 / You must install .NET」→ 该 exe 是框架依赖版，需 **.NET 10 运行时**（https://dotnet.microsoft.com/download/dotnet/10.0 ，装 Runtime 即可、无需 SDK）；装好后重试。
    - `--login` 需能起本地回环端口（默认 51121）并打开浏览器。无图形界面的远程环境：把命令打印的授权 URL 手动在本机浏览器打开完成授权。
 3. **自检**：运行 `{bridge} --selftest`——输出一句正文即登录态 + 模型可用；退出码 2（缺登录）→ 回第 2 步重登；其它失败按报错处理并回退 claude。
-4. **选写作模型**：用 AskUserQuestion 问「Gemini 写作模型」——**Pro**（Gemini 3.1 Pro High，文笔最好，默认）/ **Flash**（Gemini 3.5 Flash High，快、省额度）。两档**思考等级都是 high**。把选择写进 `设定/写手.md` 的 `model:`（`pro` 或 `flash`）。
+4. **选写作模型**：交互式询问「Gemini 写作模型」——**Pro**（Gemini 3.1 Pro High，文笔最好，默认）/ **Flash**（Gemini 3.5 Flash High，快、省额度）。两档**思考等级都是 high**。把选择写进 `设定/写手.md` 的 `model:`（`pro` 或 `flash`）。
 5. **写配置**：向 `.story-deployed` 追加 `prose_engine: gemini` 与 `gemini_bridge: {bridge}`。再为活跃书目写 `设定/写手.md`（`model:`（pro/flash）/ 本书文风适配 / 必读清单模板，模板见 `story-long-write/references/gemini-writer.md` 第六节）。
    > **不再向项目释放任何"写法铁律/写法手册"文档**。通用网文写法方法论（对齐番茄官方教程）统一放在技能 references 里（writing-craft / dialogue-mastery / character-* / hooks-* / plot-* / opening-design 等），由 Claude（大脑）读取、并在每章写作简报里按需把「本章写法要点」揉给 Gemini（见 gemini-writer.md）。项目 `设定/` 只放**本书特有**的文风/设定，不放通用准则。
 6. 告知用户：之后 `/story-long-write`、`/story-short-write` 写正文会自动走 Gemini（流程见 gemini-writer.md），用所选模型（pro/flash，都 high 思考）；想换模型改 `设定/写手.md` 的 `model:`。想切回 Claude 自己写，把 `.story-deployed` 的 `prose_engine` 改回 `claude`（或删该字段），或在书目 `设定/写手.md` 标 `engine: claude`。
@@ -398,7 +399,7 @@ OpenClaw Phase 1 只部署 skills，不部署 OpenClaw agents/hooks/plugin。
 3. 读取模板 CLAUDE.md.tmpl，同样切分
 4. 模板中的标准 section（Skill 路由表、文件结构、协作规则、Context Recovery、语言）**覆盖**用户同名 section
 5. 用户独有的 section（自定义内容）**保留**不动
-6. 未知冲突用 AskUserQuestion 让用户选择保留哪个版本
+6. 未知冲突时交互式让用户选择保留哪个版本
 
 ## AGENTS.md 合并策略（OpenCode / Codex / OpenClaw）
 
@@ -423,7 +424,7 @@ hooks 注册合并按 command 字段去重：
 ## 重新部署
 
 - `.story-deployed` 不存在 → 全新安装，Phase 2 全部执行
-- `.story-deployed` 存在且 `agents_version: 16` → 提示已部署，AskUserQuestion 确认是否重新部署
+- `.story-deployed` 存在且 `agents_version: 16` → 提示已部署，交互式确认是否重新部署
 - `.story-deployed` 存在但 `agents_version` < 16 → 提示需要更新，重新执行 Phase 2 覆盖 agents/hooks/rules/reference bundle，CLAUDE.md / AGENTS.md / settings.local.json / .codex/hooks.json 走合并策略
 
 ---

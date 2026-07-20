@@ -13,11 +13,24 @@ fi
 SKILLS_DIR="$REPO_ROOT/skills"
 EXPECTED_COUNT=13
 
+find_python() {
+  local candidate
+  for candidate in python3 python py; do
+    if "$candidate" -c 'import sys; raise SystemExit(0)' >/dev/null 2>&1; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+PYBIN="$(find_python)" || { echo "FAIL: no working Python interpreter found (tried python3, python, py)" >&2; exit 1; }
+
 echo "OpenClaw skills check"
 echo "====================="
 echo "Repo: $REPO_ROOT"
 
-python3 - "$SKILLS_DIR" "$EXPECTED_COUNT" <<'PY'
+"$PYBIN" - "$SKILLS_DIR" "$EXPECTED_COUNT" <<'PY'
 from pathlib import Path
 import json
 import re
@@ -138,7 +151,7 @@ if [ "${OPENCLAW_REAL_CHECK:-0}" = "1" ]; then
     --json >/dev/null
   LIST_JSON="$TMP_DIR/skills.json"
   openclaw --profile "$PROFILE" skills list --agent ohstory-check --json >"$LIST_JSON"
-  python3 - "$LIST_JSON" "$EXPECTED_COUNT" <<'PY'
+  "$PYBIN" - "$LIST_JSON" "$EXPECTED_COUNT" <<'PY'
 import json
 import sys
 from pathlib import Path

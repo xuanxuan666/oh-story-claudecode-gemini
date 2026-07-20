@@ -1,0 +1,38 @@
+{
+  "name": "oh-story-claudecode",
+  "version": "0.6.21",
+  "description": "A Chinese web-novel toolkit for market scanning, story analysis, long- and short-form writing, editing, review, import, cover generation, and project setup.",
+  "author": {
+    "name": "worldwonderer",
+    "url": "https://github.com/worldwonderer"
+  },
+  "homepage": "https://github.com/worldwonderer/oh-story-claudecode",
+  "repository": "https://github.com/worldwonderer/oh-story-claudecode",
+  "license": "MIT",
+  "keywords": [
+    "chinese",
+    "web-novel",
+    "story-writing",
+    "story-analysis",
+    "novel-review"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Oh Story",
+    "shortDescription": "中文网文创作、拆解、审查与项目化写作工具箱",
+    "longDescription": "覆盖长篇与短篇网文的扫榜、拆文、大纲、正文、去 AI 味、多视角审查、旧书导入、封面生成和写作项目基础设施部署。",
+    "developerName": "worldwonderer",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/worldwonderer/oh-story-claudecode",
+    "defaultPrompt": [
+      "Use $story to help me choose the right web-novel workflow.",
+      "Use $story-setup to prepare this repository for Codex story writing.",
+      "Use $story-review to review my latest chapter."
+    ]
+  }
+}

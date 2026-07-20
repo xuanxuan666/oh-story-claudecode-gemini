@@ -9,6 +9,19 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
+find_python() {
+  local candidate
+  for candidate in python3 python py; do
+    if "$candidate" -c 'import sys; raise SystemExit(0)' >/dev/null 2>&1; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+PYBIN="$(find_python)" || fail "no working Python interpreter found (tried python3, python, py)"
+
 HOOK_SRC="$REPO_ROOT/skills/story-setup/references/codex/hooks/story_codex_hook.py"
 ROOT="$TMP_DIR/story-project"
 HOOK="$ROOT/.codex/hooks/story_codex_hook.py"
@@ -22,26 +35,26 @@ git -C "$ROOT" config user.name codex-hook-test
 
 run_hook() {
   local event="$1" payload="$2"
-  (cd "$ROOT" && printf '%s' "$payload" | CODEX_PROJECT_DIR="$ROOT" python3 "$HOOK" "$event")
+  (cd "$ROOT" && printf '%s' "$payload" | CODEX_PROJECT_DIR="$ROOT" "$PYBIN" "$HOOK" "$event")
 }
 
 # Read the hook's stdout as UTF-8 bytes (not locale-decoded text): the hook emits
 # UTF-8 Chinese deny reasons, and Windows Python defaults stdin to the ANSI code page,
 # which would raise UnicodeDecodeError here even when the hook output is correct.
 assert_json() {
-  python3 -c 'import json,sys; json.loads(sys.stdin.buffer.read().decode("utf-8"))' >/dev/null
+  "$PYBIN" -c 'import json,sys; json.loads(sys.stdin.buffer.read().decode("utf-8"))' >/dev/null
 }
 
 assert_denied() {
   local out="$1" label="$2"
   printf '%s' "$out" | assert_json || fail "$label did not emit valid JSON: $out"
-  printf '%s' "$out" | python3 -c 'import json,sys; o=json.loads(sys.stdin.buffer.read().decode("utf-8")); h=o.get("hookSpecificOutput",{}); assert h.get("hookEventName")=="PreToolUse" and h.get("permissionDecision")=="deny" and h.get("permissionDecisionReason")' || fail "$label was not denied: $out"
+  printf '%s' "$out" | "$PYBIN" -c 'import json,sys; o=json.loads(sys.stdin.buffer.read().decode("utf-8")); h=o.get("hookSpecificOutput",{}); assert h.get("hookEventName")=="PreToolUse" and h.get("permissionDecision")=="deny" and h.get("permissionDecisionReason")' || fail "$label was not denied: $out"
 }
 
 assert_additional_context() {
   local out="$1" label="$2"
   printf '%s' "$out" | assert_json || fail "$label did not emit valid JSON: $out"
-  printf '%s' "$out" | python3 -c 'import json,sys; o=json.loads(sys.stdin.buffer.read().decode("utf-8")); h=o.get("hookSpecificOutput",{}); assert h.get("additionalContext")' || fail "$label missing additionalContext: $out"
+  printf '%s' "$out" | "$PYBIN" -c 'import json,sys; o=json.loads(sys.stdin.buffer.read().decode("utf-8")); h=o.get("hookSpecificOutput",{}); assert h.get("additionalContext")' || fail "$label missing additionalContext: $out"
 }
 
 assert_empty() {
@@ -150,7 +163,7 @@ echo "$out" | grep -q '第006章_截断.md' || fail "stop did not name the chang
 # 已提交（无 git 改动）的章节不应被复扫——只兜本回合改动集。
 git -C "$ROOT" add -A && git -C "$ROOT" commit -qm wip >/dev/null 2>&1
 out="$(run_hook stop '{"hook_event_name":"Stop"}')"
-printf '%s' "$out" | python3 -c 'import json,sys; o=json.loads(sys.stdin.buffer.read().decode("utf-8")); assert "截断" not in o.get("systemMessage","")' || fail "stop re-flagged already-committed prose: $out"
+printf '%s' "$out" | "$PYBIN" -c 'import json,sys; o=json.loads(sys.stdin.buffer.read().decode("utf-8")); assert "截断" not in o.get("systemMessage","")' || fail "stop re-flagged already-committed prose: $out"
 echo "  OK stop content sweep (git-changed only)"
 
 # ── SessionStart continuity: 追踪 staleness（写了章但 上下文.md 没跟上）+ 章节标题去重 ──
@@ -167,7 +180,7 @@ echo "  OK session-start continuity (追踪 staleness + dup-title)"
 
 nested="$ROOT/nested/a/b"
 mkdir -p "$nested"
-out="$(cd "$TMP_DIR" && printf '{"cwd":"%s","tool_name":"Write","tool_input":{"file_path":"book/正文/第003章_嵌套.md","content":"正文"}}' "$nested" | python3 "$HOOK" pre-tool-prose-guard)"
+out="$(cd "$TMP_DIR" && printf '{"cwd":"%s","tool_name":"Write","tool_input":{"file_path":"book/正文/第003章_嵌套.md","content":"正文"}}' "$nested" | "$PYBIN" "$HOOK" pre-tool-prose-guard)"
 assert_denied "$out" "cwd-based root resolution"
 
 echo "  OK cwd-based root resolution"
@@ -177,7 +190,7 @@ echo "  OK cwd-based root resolution"
 # .codex/hooks/ location. Discriminating: 细纲 exists at the true root, so a wrong root → deny;
 # only __file__-derived root → allow. (The valid-env tests above let env win and never hit this.)
 : > "$ROOT/book/大纲/细纲_第8章.md"
-out="$(cd "$TMP_DIR" && CODEX_PROJECT_DIR="$TMP_DIR/does-not-exist" python3 "$HOOK" pre-tool-prose-guard <<'JSON'
+out="$(cd "$TMP_DIR" && CODEX_PROJECT_DIR="$TMP_DIR/does-not-exist" "$PYBIN" "$HOOK" pre-tool-prose-guard <<'JSON'
 {"tool_name":"Write","tool_input":{"file_path":"book/正文/第8章_x.md","content":"x"}}
 JSON
 )"
@@ -192,7 +205,7 @@ mkdir -p "$NON_GIT/.codex/hooks" "$NON_GIT/book/正文" "$NON_GIT/book/大纲" "
 cp "$HOOK_SRC" "$NON_GIT_HOOK"
 cp "$REPO_ROOT/skills/story-setup/references/codex/hooks/hooks.json" "$NON_GIT/.codex/hooks.json"
 launcher_cmd="$(
-  NON_GIT="$NON_GIT" python3 - <<'PY'
+  NON_GIT="$NON_GIT" "$PYBIN" - <<'PY'
 import json, os
 from pathlib import Path
 hooks = json.loads((Path(os.environ["NON_GIT"]) / ".codex/hooks.json").read_text(encoding="utf-8"))
