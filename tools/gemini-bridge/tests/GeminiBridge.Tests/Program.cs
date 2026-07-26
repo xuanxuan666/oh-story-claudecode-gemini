@@ -92,7 +92,9 @@ internal static class Program
     private static async Task LoginWritesPlaintextConfig()
     {
         await using var server = await FakeServer.StartAsync(context =>
-            RespondJson(context, """{"data":[{"id":"gemini-pro-agent"}]}"""));
+            RespondJson(
+                context,
+                """{"data":[{"id":"gemini-pro-agent"},{"id":"gemini-flash"}]}"""));
         using var temporary = new TemporaryDirectory();
         var configPath = Path.Combine(temporary.Path, "config.json");
         var initial = TestConfig(server.BaseUrl);
@@ -100,15 +102,17 @@ internal static class Program
         await ConfigStore.SaveAsync(configPath, initial, CancellationToken.None);
 
         var originalInput = Console.In;
+        var originalOutput = Console.Out;
+        var output = new StringWriter();
         try
         {
-            Console.SetIn(new StringReader("plain-login-key\n"));
+            Console.SetIn(new StringReader("plain-login-key\ngemini-flash\n"));
+            Console.SetOut(output);
             var arguments = CliArguments.Parse(
             [
                 "--login",
                 "--config", configPath,
                 "--base-url", server.BaseUrl,
-                "--model", "gemini-pro-agent",
                 "--api-key-stdin"
             ]);
             var exitCode = await GeminiBridge.Program.RunAsync(arguments, CancellationToken.None);
@@ -117,10 +121,18 @@ internal static class Program
         finally
         {
             Console.SetIn(originalInput);
+            Console.SetOut(originalOutput);
         }
 
         var savedText = await File.ReadAllTextAsync(configPath);
         Assert(savedText.Contains("plain-login-key", StringComparison.Ordinal), "Login did not persist plaintext key.");
+        Assert(savedText.Contains("\"id\": \"gemini-flash\"", StringComparison.Ordinal), "Login did not persist selected model.");
+        var loginOutput = output.ToString();
+        Assert(loginOutput.Contains("可用模型（2）", StringComparison.Ordinal), "Login did not print the model count.");
+        Assert(
+            loginOutput.Contains("gemini-pro-agent", StringComparison.Ordinal)
+            && loginOutput.Contains("gemini-flash", StringComparison.Ordinal),
+            "Login did not print available model IDs.");
     }
 
     private static async Task AgentExecutesRequiredRead()

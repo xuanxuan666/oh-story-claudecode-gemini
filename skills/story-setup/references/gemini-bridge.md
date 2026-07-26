@@ -56,7 +56,7 @@ gemini-bridge.exe --show-config
 gemini-bridge.exe --logout
 ```
 
-`--login` 的含义是配置并验证远程 CLIProxyAPI 地址、API Key 和默认模型；它不是 Google OAuth 登录。远程服务器的上游账号由服务器管理员维护。
+`--login` 的含义是配置并验证远程 CLIProxyAPI 地址、API Key 和默认模型；输入地址与 API Key 后，它先输出普通 `/v1/models` 返回的全部模型，再询问默认模型。直接输入列表中的完整 ID，或回车接受方括号内的建议值。它不是 Google OAuth 登录。远程服务器的上游账号由服务器管理员维护。
 
 非交互环境可将 API Key 从标准输入交给登录命令：
 

@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>gemini-bridge</AssemblyName>
     <RootNamespace>GeminiBridge</RootNamespace>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <InvariantGlobalization>false</InvariantGlobalization>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>

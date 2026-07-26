@@ -304,7 +304,7 @@ OpenClaw Phase 1 只部署 skills，不部署 OpenClaw agents/hooks/plugin。
 
 1. **定位内置桥**：用本 skill 目录下 `bin/gemini-bridge.exe`，记绝对路径为 `{bridge}`。若文件缺失 → 回退 claude 并报告。若提示缺少运行时，安装 **.NET 10 Runtime** 后重试。桥源码位于仓库 `tools/gemini-bridge/`。
 2. **选择明文配置路径**：默认用 `%LOCALAPPDATA%\TwinScribe\gemini-bridge\config.json`；用户指定其他位置时记为 `{bridge_config}`。真实配置不得放进小说项目或提交 Git。API Key 按用户要求明文保存在该 JSON。
-3. **配置远程 API**：让用户在可交互终端运行 `{bridge} --login [--config "{bridge_config}"]`，输入远程 CLIProxyAPI HTTPS 地址、客户端 API Key 和默认 Gemini 模型 ID。`--login` 只请求普通 `/v1/models` 验证并写配置；**禁止调用 Management API、禁止启动 CLIProxyAPI 程序、禁止处理 Google/Antigravity OAuth**。远程上游账号由服务器管理员维护。
+3. **配置远程 API**：让用户在可交互终端运行 `{bridge} --login [--config "{bridge_config}"]`。依次输入远程 CLIProxyAPI HTTPS 地址与客户端 API Key；桥先请求普通 `/v1/models`，输出全部可用模型，再询问默认模型（直接输入列表中的完整 ID，回车接受方括号内建议值），验证后写配置。**禁止调用 Management API、禁止启动 CLIProxyAPI 程序、禁止处理 Google/Antigravity OAuth**。远程上游账号由服务器管理员维护。
 4. **诊断**：运行 `{bridge} --doctor [--config "{bridge_config}"]`。必须看到配置、API Key、模型均有效；退出码 2 → 重新 `--login`，其它失败按输出处理并回退 claude。
 5. **选写作模型**：运行 `{bridge} --models [--config "{bridge_config}"]`，从远程实际模型列表中选择完整模型 ID；不使用内置 `pro` / `flash` 别名。把完整 ID 写进 `设定/写手.md` 的 `model:`。
 6. **写项目标记**：向 `.story-deployed` 追加 `prose_engine: gemini`、`gemini_bridge: {bridge}`、`gemini_bridge_config: {bridge_config}`。再为活跃书目写 `设定/写手.md`（完整模型 ID / 本书文风适配 / 必读清单模板，模板见 `story-long-write/references/gemini-writer.md` 第六节）。

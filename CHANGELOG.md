@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.7.1
+
+### 修复
+
+- **登录先展示模型再选择**：`gemini-bridge --login` 在取得远程地址和 API Key 后，先输出 `/v1/models` 返回的全部可用模型，再询问默认模型；当前配置模型不可用时，以列表第一项作为建议值。`--model` 仍可用于非交互调用。
+
 ## v0.7.0
 
 > Gemini Bridge 破坏性重构：改为连接远程 CLIProxyAPI 普通推理接口，配置文件明文保存 API Key，不再承担代理服务或上游账号管理。

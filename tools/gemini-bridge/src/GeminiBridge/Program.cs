@@ -99,24 +99,45 @@ public static class Program
             throw new BridgeException(ExitCode.Authentication, "API Key 不能为空。");
         }
 
-        var model = arguments.Single("--model");
-        if (string.IsNullOrWhiteSpace(model))
-        {
-            model = Prompt($"默认模型 [{config.Model.Id}]: ");
-            if (string.IsNullOrWhiteSpace(model))
-            {
-                model = config.Model.Id;
-            }
-        }
-
         config.Server.BaseUrl = baseUrl.Trim();
         config.Server.ApiKey = apiKey;
-        config.Model.Id = model.Trim();
         config.Validate(requireCredentials: true);
 
         var logger = new BridgeLogger(Console.Error, config.Logging.Format);
         using var client = new CliProxyClient(config, logger);
         var models = await client.GetModelsAsync(cancellationToken);
+        if (models.Count == 0)
+        {
+            throw new BridgeException(ExitCode.RemoteApi, "远程 API 可访问，但 /v1/models 没有返回任何模型。");
+        }
+
+        Console.WriteLine($"可用模型（{models.Count}）：");
+        foreach (var availableModel in models)
+        {
+            Console.WriteLine($"  {availableModel}");
+        }
+
+        var model = arguments.Single("--model");
+        if (string.IsNullOrWhiteSpace(model))
+        {
+            var suggestedModel = models.Contains(config.Model.Id, StringComparer.Ordinal)
+                ? config.Model.Id
+                : models[0];
+            if (!string.Equals(suggestedModel, config.Model.Id, StringComparison.Ordinal))
+            {
+                Console.Error.WriteLine(
+                    $"当前配置模型 {config.Model.Id} 不在远程列表中，改用 {suggestedModel} 作为默认选项。");
+            }
+
+            model = Prompt($"默认模型 [{suggestedModel}]: ");
+            if (string.IsNullOrWhiteSpace(model))
+            {
+                model = suggestedModel;
+            }
+        }
+
+        config.Model.Id = model.Trim();
+        config.Validate(requireCredentials: true);
         if (!models.Contains(config.Model.Id, StringComparer.Ordinal))
         {
             throw new BridgeException(
