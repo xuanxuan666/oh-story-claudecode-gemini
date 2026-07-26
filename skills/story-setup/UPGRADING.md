@@ -57,6 +57,13 @@
 
 ## 版本变更
 
+### Gemini Bridge v2（当前）
+
+- `setup_skill_version` 升级到 `1.3.0`，`agents_version` 保持 `16`。
+- Gemini Bridge 采用新的远程 CLIProxyAPI 配置协议，旧 OAuth/令牌缓存/参数不再兼容。
+- 升级后重新运行 `/story-setup`，再执行 `gemini-bridge --login`；该命令只用普通 `/v1/models` 验证远程地址与客户端 API Key，并将配置明文写入用户配置文件。
+- 桥不调用 CLIProxyAPI Management API、不运行任何代理程序，也不处理 Google / Antigravity OAuth。远程服务与上游账号由服务器管理员维护。
+
 ### v2
 
 - 4 个创作型 Agent + 1 个研究型 Agent（story-architect, character-designer, narrative-writer, consistency-checker, story-researcher）

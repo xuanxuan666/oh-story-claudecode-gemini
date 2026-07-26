@@ -62,7 +62,7 @@ write_sentinel() {
   cat > "$root/.story-deployed" <<'SENTINEL'
 deployed_at: 2026-05-24T00:00:00Z
 agents_version: 16
-setup_skill_version: 1.2.5
+setup_skill_version: 1.3.0
 target_cli: claude-code
 resolver_strategy: project-local-skill-reference
 references_dir: .claude/skills/story-setup/references/agent-references
@@ -251,7 +251,7 @@ copy_hooks "$bad_sentinel_root"
 cat > "$bad_sentinel_root/.story-deployed" <<'SENTINEL'
 deployed_at: 2026-05-24T00:00:00Z
 agents_version: 16
-setup_skill_version: 1.2.5
+setup_skill_version: 1.3.0
 resolver_strategy: project-local-skill-reference
 references_dir: .claude/skills/story-setup/references/agent-references
 SENTINEL
@@ -357,13 +357,18 @@ long_count="$(printf '%s\n' "$multi_out" | grep -c '^检查：long$' || true)"
 echo "  OK TS8 multi-book gap detection"
 
 # TS9 — Settings JSON remains valid
-python3 -m json.tool "$SETTINGS_FILE" >/dev/null
+if command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
+  STORY_SETUP_PYTHON=python3
+else
+  STORY_SETUP_PYTHON=python
+fi
+"$STORY_SETUP_PYTHON" -m json.tool "$SETTINGS_FILE" >/dev/null
 echo "  OK TS9 settings JSON"
 
 # TS10 — Upgrade notes completeness
 assert_grep 'agents_version: 13|`agents_version: 13`|agents_version`.*13' "$UPGRADING_FILE" "UPGRADING.md must retain agents_version 13 history"
 assert_grep 'agents_version: 16|`agents_version: 16`|agents_version`.*16' "$UPGRADING_FILE" "UPGRADING.md must document agents_version 16"
-assert_grep 'setup_skill_version.*1\.2\.5' "$UPGRADING_FILE" "UPGRADING.md must document setup_skill_version 1.2.5"
+assert_grep 'setup_skill_version.*1\.3\.0' "$UPGRADING_FILE" "UPGRADING.md must document setup_skill_version 1.3.0"
 assert_grep 'AGENTS_VERSION.*-lt 16|AGENTS_VERSION" -lt 16' "$HOOKS_DIR/session-start.sh" "session-start must warn for agents_version 15 under v16 deployment"
 assert_grep 'agents_version.*< 16|版本 < 16' "$SKILL_DIR/SKILL.md" "story-setup redeploy branch must treat agents_version 15 as stale"
 assert_grep 'agents_version.*小于 `16`|小于 .16' "$REPO_ROOT/skills/story-review/SKILL.md" "story-review must treat agents_version 15 as stale"

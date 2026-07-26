@@ -2,16 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## v0.7.0
 
-> 可选「Gemini 执笔正文」：Claude 当大脑（选料 / 审校 / 质检 / 追踪），Gemini 3.1 Pro 当枪手，用只读文件工具自读项目文件写正文。默认仍是 Claude 自己写。
+> Gemini Bridge 破坏性重构：改为连接远程 CLIProxyAPI 普通推理接口，配置文件明文保存 API Key，不再承担代理服务或上游账号管理。
+
+### 破坏性变更
+
+- **旧桥协议不再兼容**：移除 Google / Antigravity OAuth、旧令牌缓存与旧参数约定；升级后必须重新运行 `gemini-bridge --login`。
+- **远程服务边界固定**：桥只访问普通 `/v1/models` 与 `/v1beta/models/{model}:generateContent`；不调用 CLIProxyAPI Management API，不发现、不启动、不管理任何本地代理程序。
 
 ### 新增
 
-- **Gemini 执笔（可选）**：内置预编译 `skills/story-setup/bin/gemini-bridge.exe`（Windows / 框架依赖，需 .NET 10 运行时；源码不在仓库）——复用 Google Antigravity 订阅（OAuth 登录一次、自动刷新），自实现 agent 文件工具循环，让 Gemini 用只读 `read_file` / `list_directory`（锁死项目目录）自读细纲 / 上一章 / 文风 / 对标原文写正文；`--require` 必读清单 + 监督闸（漏读自动打回补读、缺登录退出码 2）。
-- **story-setup 正文引擎选择**：`/story-setup` 新增「正文引擎」一步（2.8），可选 Claude 自己写（默认）或 Gemini 执笔；选 Gemini 时用内置 exe、**自动打开浏览器授权 Antigravity**、自检并写入 `.story-deployed` 的 `prose_engine` / `gemini_bridge`。
-- **执笔 SOP**：`story-long-write/references/gemini-writer.md` 沉淀「拟简报 → 调桥 → 监督必读 → 按本书文风质检 → 打回重写 → 落盘」全流程；`story-long-write`（SKILL + workflow-daily）与 `story-short-write` 的「正文执行」加 Gemini 分支（未开启则回退原 narrative-writer 路径）。
-- **质检按本书文风适配**：番茄 / 空行体裁质检忽略 `check-ai-patterns` 的 ——/碎句命中、跳过 `normalize-punctuation`，避免机械套默认规则毁掉本书排版。
+- **源码开放并纳入仓库**：新增 `tools/gemini-bridge/` .NET 10 源码、无外部测试框架的集成测试和可复现打包入口；继续发布 Windows 单文件 `skills/story-setup/bin/gemini-bridge.exe`。
+- **明文 JSON 配置**：新增远程地址、客户端 API Key、完整模型 ID、超时、重试、工具轮数、安全限制与日志格式配置；默认路径为 `%LOCALAPPDATA%\TwinScribe\gemini-bridge\config.json`，也支持 `--config` 与 `GEMINI_BRIDGE_CONFIG`。
+- **配置与诊断命令**：新增 `--login`、`--logout`、`--doctor`、`--models`、`--show-config`、`--init-config`；`--login` 通过普通 `/v1/models` 验证连接后保存配置。
+- **受限文件代理**：正文请求通过 Gemini 原生工具调用执行只读 `read_file` / `list_directory`；所有路径锁定在项目根目录内，默认拒绝符号链接/重解析点，`--require` 必读清单漏读会自动修复。
+- **写作链路接入**：更新 `story-setup`、长篇/短篇写作技能与日更流程，支持独立 `--brief`、重复 `--require`、完整模型 ID 和配置路径；默认正文引擎仍是当前主编智能体。
+
+### 发布准备
+
+- 版本号升级到 `0.7.0`，`setup_skill_version` 升级到 `1.3.0`；已部署项目需重新运行 `/story-setup`、重新执行 `gemini-bridge --login` 并新开会话。
 
 ## v0.6.21
 

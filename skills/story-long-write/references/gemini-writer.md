@@ -1,15 +1,15 @@
-# gemini-writer.md：Gemini 执笔（正文交给 Gemini 桥）
+# gemini-writer.md：远程 Gemini 执笔
 
-> 「正文执行」步骤的 **Gemini 执笔分支**（可选，由 story-setup 开启）。Claude 当大脑（选料 / 拟简报 / 审校 / 质检 / 追踪），Gemini 当枪手（用只读文件工具自己读项目文件、写正文）。接缝只在正文这一步——大纲 / 设定 / 追踪 / 质检管道全不变。桥由 story-setup 随技能预编译打包（`story-setup/bin/gemini-bridge.exe`）并完成浏览器登录，见 story-setup 第 2.8 节。
+> 「正文执行」步骤的可选 Gemini 分支。主编智能体负责选料 / 拟简报 / 审校 / 质检 / 追踪，Gemini 通过远程 CLIProxyAPI 普通接口，用只读文件工具读取项目文件并写正文。远程服务器的上游账号由服务器管理员维护；桥不调用 Management API、不启动代理程序、不处理 OAuth。
 
 ## 一、何时走本流程（激活条件）
 1. 项目 `.story-deployed` 标 `prose_engine: gemini`（story-setup 选"Gemini 执笔"时写入），**或** `设定/写手.md` 标 `engine: gemini`；**且**
-2. 存在可用的 **gemini-bridge**（story-setup 已随技能打包 `story-setup/bin/gemini-bridge.exe` 并登录；框架依赖版，需目标机装 .NET 10 运行时）：路径按序取 `设定/写手.md` 的 `bridge:` → 环境变量 `GEMINI_BRIDGE` → `.story-deployed` 的 `gemini_bridge:`。
+2. 存在可用的 **gemini-bridge**（story-setup 随技能打包 `story-setup/bin/gemini-bridge.exe`，需 .NET 10 Runtime）：路径按序取 `设定/写手.md` 的 `bridge:` → 环境变量 `GEMINI_BRIDGE` → `.story-deployed` 的 `gemini_bridge:`；配置路径按 `设定/写手.md` 的 `config:` → 环境变量 `GEMINI_BRIDGE_CONFIG` → `.story-deployed` 的 `gemini_bridge_config:` → 桥默认路径解析。
 - 未开启 或 桥不存在 → **回退**原 narrative-writer / 主线程路径，本文件不适用。
 - `设定/写手.md`（放项目根 `设定/` 下）可选，用于覆盖模型 / 本书文风适配 / 必读模板（模板见文末）。
 
 ## 二、分工铁律
-- **Claude 管计划与判断**：写前准备（状态筛选 / 模块召回 / 文风召回 / 意图确认）照 SKILL.md Phase 4 原样做，产出一份**自足写作简报 + 必读文件清单**。
+- **主编智能体管计划与判断**：写前准备（状态筛选 / 模块召回 / 文风召回 / 意图确认）照 SKILL.md Phase 4 原样做，产出一份**自足写作简报 + 必读文件清单**。
 - **Gemini 管文笔与自取料**：桥让它用 `read_file` / `list_directory`（只读、锁死项目目录）自己读细纲 / 上一章 / 文风 / 对标原文，写出正文。
 - **笨模型要管紧**：简报要具体；必读用 `--require` 强制；正文永远经 Claude 质检才落盘，绝不裸奔。
 - **⭐ Gemini 面前"零成品句"（本文件最易违反、一违反就毁文风的一条）**：Gemini 是模仿型笨模型，你在它眼前放**任何成品正文句/例句**，它就照抄那个措辞，每章复读、把文风写成一个模子（跟它抄 craft 文档里"林舟/陆沉"是同一个病）。所以**凡是 Gemini 要读的（细纲 / 简报 / 必读文件），一律不许出现成品正文句**，只给两样：① **机制 / 类别**——"要什么效果、怎么演"（例："震惊用身体失态演：掉东西 / 反复确认数字 / 无意义走动，禁情绪词，具体动作它自己编"）；② **显式标注的固定文案**——系统【】、跨视角回环梗、章节标题等，标清"原样照抄、非文风范本"。**"改前→改后"示例句只是 Claude 审校侧判断违规的依据，绝不进 Gemini 视野。** Claude 在 Gemini 面前只能"下指令 + 钉常量"，连举一句成品正文都不行——举例它就抄。
@@ -24,15 +24,16 @@
    - ④ 硬约束（字数、本书文风、设定红线、章首 / 章尾钩子）
    - ⑤ 输出要求（不输出标题、只正文）。
    - 简报只放 Claude 的**指令与清单**，不必内联文件正文——Gemini 会自己读。
-3. **调桥**（`{bridge}` = 激活条件里解析到的 exe 路径；`--require` = 简报文件清单，逗号分隔）：
+3. **调桥**（`{bridge}` / `{bridge_config}` 按激活条件解析；每个必读文件或通配单独传一个 `--require`）：
    ```
-   {bridge} --write --project "{项目根}" --brief-file "{brief}" --require "{清单}" [--model {pro|flash}]
+   {bridge} --write --config "{bridge_config}" --project "{项目根}" --brief "{brief}" \
+     --require "{必读1}" --require "{必读2}" [--model "{远程完整模型 ID}"]
    ```
    `stdout` = 正文；`stderr` = 工具轨迹 + `[读取]` / `[✓ 必读覆盖]` / `[⚠ 漏读必读]` + `[模型 …]`。
    - **⏱ 必须用长超时调桥**：一章要让 Gemini 读多个文件 + 高思考写 3000-4000 字，通常 **3-5 分钟**。用 Bash 调桥时把**超时设到 600000ms（10 分钟）**——默认 2 分钟会被掐断，这就是「调用 Gemini 老是超时」的主因。桥内部已对网络瞬断自动退避重试（最多 3 次）。**平台适配**：600000ms 是 Claude Code Bash 工具的写法；Codex 的 shell 没有对应超时参数，用长 `yield_time_ms`（≥600000）轮询或前台等满约 10 分钟再判失败；OpenCode/OpenClaw 同理，按各自 shell 工具的长任务机制给足 10 分钟，别用默认短超时。
    - **📋 必读清单（--require）用通配更稳**：上一章写 `正文/第{N-1}章_*.md`（桥支持 `*` 通配，自动匹配真实文件名），别写死可能已改的章节标题；清单里磁盘上不存在的文件，桥会自动跳过、不再死追空转。
-   - **模型选择**（取 `设定/写手.md` 的 `model:`，缺省 pro）：`--model pro` = Gemini 3.1 Pro (High)（文笔最好）；`--model flash` = Gemini 3.5 Flash (High) = `gemini-3-flash-agent`（快、省额度）。**两档思考等级都是 high**（桥对非 2.5 模型统一注入 `thinkingLevel=high`）。正文默认 pro；赶进度 / 走量 / 先出草稿可用 flash。
-4. **验监督**：看 `stderr`——`[✓ 必读覆盖]` 才算达标；`[⚠ 漏读必读]`（补读 2 次仍漏）则据情形重跑或补简报再跑。**退出码 2（缺登录）→ 提示用户重跑 `{bridge} --login` 走浏览器授权**后再来。
+   - **模型选择**：取 `设定/写手.md` 的 `model:`；缺省时使用桥配置的 `model.id`。只使用 `{bridge} --models` 返回的远程完整模型 ID，不使用内置 `pro` / `flash` 别名。
+4. **验监督**：看 `stderr`——`[✓ 必读覆盖]` 才算达标；`[⚠ 漏读必读]`（补读后仍漏）则据情形重跑或补简报再跑。退出码 2 表示远程 API Key 缺失或失效 → 提示用户重跑 `{bridge} --login [--config "{bridge_config}"]` 配置普通 API。
 5. **落盘**：正文前加 `## 第N章 {章名}`，写入 `正文/第XXX章_章名.md`。
 6. **质检（对落盘文件跑，桥不跑脚本）**：
    - **始终跑** `node scripts/check-degeneration.js --check <正文>`（复读 / 截断 / 元信息 / 工程词，模型无关兜底）＋ `node scripts/check-ai-patterns.js --check <正文>`（AI 句式）＋ 禁用词扫描 ＋ 正文元信息扫描 ＋ `scripts/normalize-punctuation.js` ＋ Python 字数核对。番茄打法与技能去 AI 一致（短句、去 AI 腔、不用 ——），常规体裁照跑即可；**唯一例外**：章尾钩若用了一个悬念 `……`，别当错误抹掉。
@@ -89,15 +90,16 @@
 ```
 
 ## 五、兜底
-- 缺登录（退出码 2）→ 提示用户重跑 `{bridge} --login`（浏览器授权 Antigravity），登录后重跑。
-- 桥不可用 / 缺 .NET 10 运行时 → 回退原 narrative-writer / 主线程路径，正常写作（并提示装 .NET 10 运行时或 `/story-setup` 重新配置 Gemini 执笔）。
+- API Key 缺失或失效（退出码 2）→ 提示用户重跑 `{bridge} --login [--config "{bridge_config}"]`，验证远程普通 API 后重跑。
+- 远程 API 不可达 / 模型不存在 / 桥不可用 / 缺 .NET 10 Runtime → 回退原 narrative-writer / 主线程路径，并提示用 `{bridge} --doctor` 定位问题。
 - Gemini 漏读 / 凭空编 → `--require` + 监督闸已强制补读；仍漏则审校时对照细纲 / 设定，命中即回炉。
 
 ## 六、`设定/写手.md` 配置模板（可选，放项目根 设定/ 下）
 ```
 engine: gemini            # 或 claude（关闭 Gemini 执笔、回退原路径）
 bridge: <gemini-bridge.exe 绝对路径>   # 留空则用 GEMINI_BRIDGE 或 .story-deployed 的 gemini_bridge
-model: pro                # pro = 3.1 Pro High（文笔最好，默认）/ flash = 3.5 Flash High（快）；两者思考都是 high。也可填完整 id 如 gemini-pro-agent
+config: <gemini-bridge config.json 绝对路径>  # 留空则用 GEMINI_BRIDGE_CONFIG / .story-deployed / 默认路径
+model: gemini-pro-agent   # 必须是 gemini-bridge --models 返回的远程完整模型 ID；留空则用桥配置默认值
 排版风格: 番茄轻小说       # 或 默认；仅记录本书体裁，供文风召回参考
 必读清单模板: 大纲/细纲_第{N}章.md, 正文/第{N-1}章_*.md, 设定/文风.md, 追踪/角色状态.md, 追踪/伏笔.md
 ```

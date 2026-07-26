@@ -4,7 +4,7 @@
 
 网文写作 skill 包，覆盖长篇与短篇网络小说的扫榜、拆文、写作、去AI味、封面图全流程。适配 Claude Code、OpenCode、OpenClaw、Codex CLI、workbuddy。
 
-> 🆕 **本分支新增「Gemini 执笔正文」（可选）**：Claude 当大脑（选料 / 审校 / 质检 / 追踪），Gemini 3.1 Pro 当枪手、自读项目文件写正文，文笔更「网文」。跑 `/story-setup` 在「正文引擎」一步一键开启——**自动打开浏览器授权 Antigravity**（Google 账号登录一次）。详见下方 [可选：Gemini 执笔正文](#可选gemini-执笔正文claude-大脑--gemini-枪手) 章节。
+> 🆕 **本分支提供「远程 Gemini 执笔正文」（可选）**：主编智能体负责选料 / 审校 / 质检 / 追踪，Gemini 通过用户提供的远程 CLIProxyAPI 普通接口自读项目文件写正文。跑 `/story-setup` 在「正文引擎」一步开启。详见下方 [可选：远程 Gemini 执笔正文](#可选远程-gemini-执笔正文)。
 >
 > 本仓库 fork 自 [worldwonderer/oh-story-claudecode](https://github.com/worldwonderer/oh-story-claudecode)，只增加 Gemini 执笔这一可选能力，其余全流程（扫榜 / 拆文 / 写作 / 去 AI 味 / 封面）与上游保持一致。
 
@@ -20,6 +20,8 @@
 
 围绕四条线展开：爆款逆向 · 剧情模块化重组 · 上下文状态分层管理 · 人机协同。
 
+> v0.7.0 起：Gemini Bridge 破坏性重构为远程 CLIProxyAPI 客户端。`--login` 通过普通 `/v1/models` 验证远程地址、客户端 API Key 与完整模型 ID，并将 API Key 明文保存到用户 JSON 配置；桥只调用普通模型接口，不使用 Management API、不启动代理程序、不处理 Google / Antigravity OAuth。旧桥配置不兼容，升级后请重新运行 `/story-setup` 与 `gemini-bridge --login`。
+>
 > v0.6.21 起：短篇写作参考栈瘦身——`story-short-write` 删除长篇继承残留 references，改由 `short-format` / `short-craft` / `short-deslop` + 四个题材包（追妻火葬场、复仇打脸、总裁豪门、宅斗宫斗）承接短篇格式、情绪直给、节奏密度和去 AI 味；已部署项目建议重新运行 `/story-setup` 并新开会话，获取新版 narrative-writer 短篇例外。
 >
 > v0.6.20 起：长篇大纲补强——对标节奏迁移（把爆款拆解的剧情节奏按关键点回流进卷纲，缺节奏文件走章节摘要降级）+ 章节定位与张弛（破「每章像短篇」：按章在一级结构里的位置分高压/推进/关系/低压等定位，低压/关系/过场章不再被迫塞钩子爽点、但保留追读拉力，并加「禁情绪母题扎堆」底线；定位可留空、非硬配额）。
@@ -217,16 +219,17 @@ demo/让你管账号，你高燃混剪炸全网/
 
 </details>
 
-## 可选：Gemini 执笔正文（Claude 大脑 + Gemini 枪手）
+## 可选：远程 Gemini 执笔正文
 
-默认正文由 Claude 自己写。你也可以让 **Gemini 3.1 Pro 执笔正文**——Claude 仍当大脑（选料、拟简报、审校、质检、维护追踪），Gemini 当枪手：用只读文件工具**自己读**项目里的细纲 / 上一章 / 文风 / 对标原文，写出更“网文”、更铺得开的正文。接缝只在「正文执行」这一步，大纲 / 设定 / 追踪 / 质检管道全不变。
+默认正文由当前主编智能体自己写。也可以让远程 CLIProxyAPI 提供的 Gemini 执笔：主编智能体仍负责选料、拟简报、审校、质检和维护追踪，Gemini 用只读文件工具读取细纲 / 上一章 / 文风 / 对标原文。接缝只在「正文执行」这一步，大纲 / 设定 / 追踪 / 质检管道不变。
 
-**怎么开**：跑 `/story-setup`，在「正文引擎」一步选 **Gemini 执笔**。它用技能内置的 `gemini-bridge.exe`（预编译，需 **.NET 10 运行时**），**自动打开浏览器授权 Antigravity**（Google 账号登录一次、长期有效），自检通过后写入配置。之后 `/story-long-write`、`/story-short-write` 的正文就自动走 Gemini。想切回 Claude 自己写，把 `.story-deployed` 的 `prose_engine` 改回 `claude` 即可。
+**怎么开**：准备远程 CLIProxyAPI HTTPS 地址、客户端 API Key 和可用 Gemini 模型 ID；跑 `/story-setup`，在「正文引擎」一步选 **Gemini 执笔**。内置 `gemini-bridge.exe` 需要 **.NET 10 Runtime**。`gemini-bridge --login` 验证普通 `/v1/models` 并把地址、API Key、模型明文写入用户配置。之后 `/story-long-write`、`/story-short-write` 的正文自动走远程 Gemini。
 
-- **监督**：Claude 把「必读清单」交给桥（`--require`），Gemini 漏读会被**监督闸自动打回补读**；正文永远经 Claude 质检（去 AI 味 / 退化检测 / 字数）才落盘。
+- **边界**：桥不调用 CLIProxyAPI Management API，不启动代理程序，也不处理 Google/Antigravity OAuth；远程上游账号由服务器管理员维护。
+- **监督**：每个必读文件单独传一个 `--require`，Gemini 漏读会被监督闸自动打回补读；正文经主编智能体质检后才落盘。
 - **质检适配**：番茄轻小说等特殊排版体裁，质检按本书文风放行（允许 ……/——/段间空行、跳过 normalize-punctuation）。
-- 认证走 Antigravity 的 Google OAuth（Code Assist 后端），**非官方付费 API key**，个人在自己订阅额度内使用。
-- 细节见 `skills/story-setup/bin/README.md`（登录 / 用法）与 `skills/story-long-write/references/gemini-writer.md`（执笔 SOP）。**目前仅 Windows；桥源码不在本仓库。**
+- **配置**：API Key 按用户要求明文存储；默认展示与日志会脱敏。不要把真实配置提交 Git。
+- 细节见 `skills/story-setup/references/gemini-bridge.md`（配置 / 命令）与 `skills/story-long-write/references/gemini-writer.md`（执笔 SOP）。桥源码位于 `tools/gemini-bridge/`。
 
 ## Agent 体系
 

@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "server": {
+    "baseUrl": "https://proxy.example.com",
+    "apiKey": "replace-with-plaintext-api-key"
+  },
+  "model": {
+    "id": "gemini-pro-agent",
+    "protocol": "gemini",
+    "thinkingLevel": "high"
+  },
+  "agent": {
+    "timeoutSeconds": 600,
+    "requestRetries": 3,
+    "maxToolTurns": 20,
+    "requiredReadRetries": 2,
+    "emptyResponseRetries": 2,
+    "maxOutputTokens": 32768
+  },
+  "security": {
+    "allowInsecureHttp": false,
+    "allowProjectSymlinks": false,
+    "maximumFileBytes": 1048576
+  },
+  "logging": {
+    "format": "text",
+    "level": "info"
+  }
+}

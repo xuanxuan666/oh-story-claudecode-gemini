@@ -275,42 +275,41 @@ OpenClaw Phase 1 只部署 skills，不部署 OpenClaw agents/hooks/plugin。
   ```
   deployed_at: <date -u +"%Y-%m-%dT%H:%M:%SZ">
   agents_version: 16
-  setup_skill_version: 1.2.5
+  setup_skill_version: 1.3.0
   target_cli: claude-code（或 opencode、codex、openclaw，或 claude-code,opencode,codex,openclaw 等组合）
   resolver_strategy: project-local-skill-reference
   references_dir: .claude/skills/story-setup/references/agent-references（Codex 可写 .codex/skills/story-setup/references/agent-references；OpenClaw 可写 skills/story-setup/references/agent-references；多端用逗号分隔）
   ```
-- 若在 2.8 选了 Gemini 执笔，追加两行：`prose_engine: gemini` 与 `gemini_bridge: <gemini-bridge 可执行文件绝对路径>`（默认 `prose_engine: claude`，可省略该字段）
+- 若在 2.8 选了 Gemini 执笔，追加：`prose_engine: gemini`、`gemini_bridge: <gemini-bridge 可执行文件绝对路径>`、`gemini_bridge_config: <明文 JSON 配置绝对路径>`（默认 `prose_engine: claude`，可省略这些字段）
 - 此文件供 session-start.sh 和写作 skill 检测部署状态，避免重复提示
 - 同时创建一次性标记文件 `.claude/.agents-pending-restart`（空文件即可）。session-start.sh 在下一个会话启动时据此确认 agents 已随新会话注册，并自动删除该标记——用来向用户确认「重启已生效」。
 - 如果 `.story-deployed` 已存在但无 `agents_version` 或版本 < 16，提示用户重新运行 story-setup 以更新 hooks/agents/rules/reference bundle（具体变更见 `UPGRADING.md`）
 
-### 2.8 配置正文引擎（Claude 自己写 / Gemini 执笔）
+### 2.8 配置正文引擎（主编智能体自己写 / Gemini 执笔）
 
-> 正文（章节内容）由谁来写是**可选项**，默认 Claude 自己写。Gemini 执笔＝Claude 当大脑（选料 / 审校 / 质检 / 追踪）、Gemini 当枪手（用只读文件工具自读项目文件写正文），文笔更“网文”。详见 `skills/story-long-write/references/gemini-writer.md` 与 `skills/story-setup/bin/README.md`。
+> 正文（章节内容）由谁来写是**可选项**，默认当前主编智能体自己写。Gemini 执笔通过远程 CLIProxyAPI 普通接口调用 Gemini，并用只读文件工具自读项目资料。详见 `skills/story-long-write/references/gemini-writer.md` 与 [references/gemini-bridge.md](references/gemini-bridge.md)。
 
 交互式让用户选择：
 
 ```
 问题："正文（章节内容）用谁来写？"
 选项：
-  - Claude 自己写（默认）：无需额外依赖，规划+正文+审校全由 Claude 完成。
-  - Gemini 执笔（文笔更“网文”，需 Antigravity 账号）：Claude 选料+审校+质检，Gemini 自读项目文件写正文。需 .NET 10 运行时 与一个 Google Antigravity 账号（Windows）。
+  - 主编智能体自己写（默认）：无需额外依赖，规划+正文+审校由当前宿主模型完成。
+  - Gemini 执笔（远程 CLIProxyAPI）：需 .NET 10 Runtime、远程 CLIProxyAPI HTTPS 地址、客户端 API Key 和可用 Gemini 模型 ID。
 ```
 
-**选「Claude 自己写」** → 在 `.story-deployed` 写 `prose_engine: claude`（或省略该字段），结束本步。
+**选「主编智能体自己写」** → 在 `.story-deployed` 写 `prose_engine: claude`（或省略该字段），结束本步。
 
 **选「Gemini 执笔」** → 依次执行，任一步失败都回退 `prose_engine: claude` 并在安装报告说明：
 
-1. **定位内置桥**：用本 skill 目录下 `bin/gemini-bridge.exe`（**已随技能预编译打包，无需构建、无需源码**）。记其绝对路径为 `{bridge}`。若该文件缺失（异常）→ 回退 claude 并在报告说明。
-2. **浏览器授权 Antigravity（关键）**：运行 `{bridge} --login`。**它会自动打开系统默认浏览器**，让用户用 Google 账号授权 Antigravity。提示用户：在浏览器完成授权、看到「登录成功」页后返回终端。凭证落盘 `%LOCALAPPDATA%\TwinScribe\antigravity-*.json`（refresh_token 长期有效、自动刷新，以后无需重登）。
-   - 若运行报「找不到 .NET 运行时 / You must install .NET」→ 该 exe 是框架依赖版，需 **.NET 10 运行时**（https://dotnet.microsoft.com/download/dotnet/10.0 ，装 Runtime 即可、无需 SDK）；装好后重试。
-   - `--login` 需能起本地回环端口（默认 51121）并打开浏览器。无图形界面的远程环境：把命令打印的授权 URL 手动在本机浏览器打开完成授权。
-3. **自检**：运行 `{bridge} --selftest`——输出一句正文即登录态 + 模型可用；退出码 2（缺登录）→ 回第 2 步重登；其它失败按报错处理并回退 claude。
-4. **选写作模型**：交互式询问「Gemini 写作模型」——**Pro**（Gemini 3.1 Pro High，文笔最好，默认）/ **Flash**（Gemini 3.5 Flash High，快、省额度）。两档**思考等级都是 high**。把选择写进 `设定/写手.md` 的 `model:`（`pro` 或 `flash`）。
-5. **写配置**：向 `.story-deployed` 追加 `prose_engine: gemini` 与 `gemini_bridge: {bridge}`。再为活跃书目写 `设定/写手.md`（`model:`（pro/flash）/ 本书文风适配 / 必读清单模板，模板见 `story-long-write/references/gemini-writer.md` 第六节）。
-   > **不再向项目释放任何"写法铁律/写法手册"文档**。通用网文写法方法论（对齐番茄官方教程）统一放在技能 references 里（writing-craft / dialogue-mastery / character-* / hooks-* / plot-* / opening-design 等），由 Claude（大脑）读取、并在每章写作简报里按需把「本章写法要点」揉给 Gemini（见 gemini-writer.md）。项目 `设定/` 只放**本书特有**的文风/设定，不放通用准则。
-6. 告知用户：之后 `/story-long-write`、`/story-short-write` 写正文会自动走 Gemini（流程见 gemini-writer.md），用所选模型（pro/flash，都 high 思考）；想换模型改 `设定/写手.md` 的 `model:`。想切回 Claude 自己写，把 `.story-deployed` 的 `prose_engine` 改回 `claude`（或删该字段），或在书目 `设定/写手.md` 标 `engine: claude`。
+1. **定位内置桥**：用本 skill 目录下 `bin/gemini-bridge.exe`，记绝对路径为 `{bridge}`。若文件缺失 → 回退 claude 并报告。若提示缺少运行时，安装 **.NET 10 Runtime** 后重试。桥源码位于仓库 `tools/gemini-bridge/`。
+2. **选择明文配置路径**：默认用 `%LOCALAPPDATA%\TwinScribe\gemini-bridge\config.json`；用户指定其他位置时记为 `{bridge_config}`。真实配置不得放进小说项目或提交 Git。API Key 按用户要求明文保存在该 JSON。
+3. **配置远程 API**：让用户在可交互终端运行 `{bridge} --login [--config "{bridge_config}"]`，输入远程 CLIProxyAPI HTTPS 地址、客户端 API Key 和默认 Gemini 模型 ID。`--login` 只请求普通 `/v1/models` 验证并写配置；**禁止调用 Management API、禁止启动 CLIProxyAPI 程序、禁止处理 Google/Antigravity OAuth**。远程上游账号由服务器管理员维护。
+4. **诊断**：运行 `{bridge} --doctor [--config "{bridge_config}"]`。必须看到配置、API Key、模型均有效；退出码 2 → 重新 `--login`，其它失败按输出处理并回退 claude。
+5. **选写作模型**：运行 `{bridge} --models [--config "{bridge_config}"]`，从远程实际模型列表中选择完整模型 ID；不使用内置 `pro` / `flash` 别名。把完整 ID 写进 `设定/写手.md` 的 `model:`。
+6. **写项目标记**：向 `.story-deployed` 追加 `prose_engine: gemini`、`gemini_bridge: {bridge}`、`gemini_bridge_config: {bridge_config}`。再为活跃书目写 `设定/写手.md`（完整模型 ID / 本书文风适配 / 必读清单模板，模板见 `story-long-write/references/gemini-writer.md` 第六节）。
+   > **不再向项目释放任何"写法铁律/写法手册"文档**。通用网文写法方法论统一放在技能 references，由主编智能体读取并按章揉进简报「本章写法要点」；项目 `设定/` 只放本书特有的文风与设定。
+7. 告知用户：之后 `/story-long-write`、`/story-short-write` 写正文会走远程 Gemini；想换模型，先用 `--models` 确认可用 ID，再改 `设定/写手.md`。想切回主编智能体写作，把 `.story-deployed` 的 `prose_engine` 改回 `claude`，或在书目 `设定/写手.md` 标 `engine: claude`。
 
 ## Phase 3：验证安装
 
@@ -326,13 +325,13 @@ OpenClaw Phase 1 只部署 skills，不部署 OpenClaw agents/hooks/plugin。
    - 检查 `.claude/skills/story-setup/references/agent-references/` 下 reference 文件完整
    - 检查所有 `story-setup/references/agent-references/<file>.md` 都能解析到 deployed bundle
 5. 验证部署标记：
-   - 检查 `.story-deployed` 是否存在且包含时间戳、`agents_version: 16`、`setup_skill_version: 1.2.5`、`target_cli`、`resolver_strategy`、`references_dir`
+   - 检查 `.story-deployed` 是否存在且包含时间戳、`agents_version: 16`、`setup_skill_version: 1.3.0`、`target_cli`、`resolver_strategy`、`references_dir`
 6. 输出安装报告：
    - 列出所有已部署的文件
    - 列出需要注意的事项（如已有配置已合并）
     - **⚠️ 重启提示（必须醒目输出）**：本次部署写入了 `.claude/agents/`，但这些 custom agent 只在「会话启动」时才会被 Claude Code 注册成 `subagent_type`。**请新开一个 Claude Code 会话再开始写作**，否则当前会话里 story-review / story-long-write 等想 spawn `story-architect`、`narrative-writer` 等时会拿到「subagent_type 不可用」并降级 solo（单视角，失去多 agent 协作）。判断是否生效：新会话里跑 `/story-review`，报告头若是 `Effective Mode: full/lean` 即注册成功；若是 `Fallback: ... -> solo` 说明还在旧会话或未注册。
     - 重启后即可使用 `/story-long-write` 或 `/story-short-write`
-    - **正文引擎**：报告本次选择——`Claude 自己写` 或 `Gemini 执笔`。若选 Gemini，确认 `{bridge} --selftest` 已通过、`.story-deployed` 已写入 `prose_engine: gemini` 与 `gemini_bridge` 路径；若因缺 .NET 运行时 / 未登录回退了，明确告知回退原因与补救（装 .NET 10 运行时 / 重跑 `--login`）后重跑 `/story-setup`
+    - **正文引擎**：报告本次选择——`主编智能体自己写` 或 `Gemini 执笔`。若选 Gemini，确认 `{bridge} --doctor` 已通过、`.story-deployed` 已写入 `prose_engine` / `gemini_bridge` / `gemini_bridge_config`；若因缺 .NET 运行时、远程 API 不可达、API Key 无效或模型不存在而回退，明确告知原因与补救后重跑 `/story-setup`
     - 如果执行了 2.4.4 模型配置，输出 Agent 模型配置摘要：
       ```
       Agent 模型配置：
